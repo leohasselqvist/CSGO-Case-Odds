@@ -1,6 +1,7 @@
+import pickle
+
 from bs4 import BeautifulSoup
 import requests
-import pickle
 import string
 
 
@@ -29,6 +30,14 @@ floatbase = {
     "Battle-Scarred": 0.56
 }
 
+gradebase = {
+    "Covert Knife": 0.0025575,
+    "Covert": 0.0063939,
+    "Classified": 0.0319693,
+    "Restricted": 0.1598466,
+    "Mil-Spec": 0.792327,
+}
+
 
 class Case:
     def __init__(self, name, weapons, price):
@@ -38,7 +47,7 @@ class Case:
 
 
 class Weapon:
-    def __init__(self, name, float_min, float_max, prices, stprices):
+    def __init__(self, name, float_min, float_max, prices, stprices, odds):
         self.name = name  # STR
         self.float_min = float_min
         self.float_max = float_max
@@ -49,7 +58,6 @@ class Weapon:
 def collect_case_links():
     page = BeautifulSoup(requests.get("https://csgostash.com").content, 'html.parser')
     case_links = []
-    price = None
     for i in page.find_all('a', href=True):
         if "/case/" in i['href']:
             case_links.append(str(i['href']))
@@ -65,6 +73,7 @@ def collect_case_info(case_link):
     )
     for i in page.find_all('a', class_="price-st"):
         weapons.append(collect_wpn_info(i['href']))
+
     return Case(name, weapons, price)
 
 
@@ -103,24 +112,20 @@ def collect_wpn_info(wpn_link):
                 prices[key] = value
             else:
                 break
-    return Weapon(name, float_min, float_max, prices, stprices)
-
-
-def load_from_file():
-    try:
-        with open("savefile.pkl") as f:
-            return pickle.load(f)
-    except FileNotFoundError:
-        return False
-
-
-def save_file(saveinfo):
-    with open("savefile.pkl", "w") as f:
-        pickle.dump(saveinfo, f)
+    odds = float(gradebase[str(page.find("p", class_="nomargin").contents[0]).split(" ")[0]])
+    return Weapon(name, float_min, float_max, prices, stprices, odds)
 
 
 def __main__():
-    case_links = collect_case_links()
+    weapon1 = Weapon("gun1", 0.0, 0.07, {"Factory New": 323.23}, {"Factory New": 623.23}, 1)
+    weapon2 = Weapon("gun2", 0.0, 0.07, {"Factory New": 242.23}, {"Factory New": 1352.23}, 1)
+    case1 = Case("gunner case", [weapon1], 2.32)
+    case2 = Case("shooter case", [weapon2], 5.30)
+
+    with open("savefile.pkl", "w") as f:
+        pickle.dump()
+
+    """case_links = collect_case_links()
     print(case_links)
     cases = []
     for i in range(0, len(case_links)):
@@ -137,7 +142,7 @@ def __main__():
         choice = choice.weapons[int(input("Choose weapon: "))]
         print(f"ST Prices: {choice.stprices}")
         print(f"Prices: {choice.prices}")
-        input("...")
+        input("...")"""
 
 
 if __name__ == "__main__":
